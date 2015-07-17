@@ -1,0 +1,12 @@
+prefix=/home/bath/scmpf
+libhome=/home/bath/gohome/src/baidu
+
+
+Name: baidu.go
+Description: baidu normal pkg vars for go
+Version: 0.1
+Libs: ${prefix}/public/mcpack/output/lib/libmcpack.a -lstdc++
+Cflags: -I${prefix}/public/mcpack/output/include/ -I${prefix}/public/nshead/output/include/ -I${prefix}/lib2-64/bsl/include/
+
+
+
