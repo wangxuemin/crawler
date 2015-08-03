@@ -23,6 +23,7 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"os"
 	"unsafe"
 )
 
@@ -55,6 +56,11 @@ func NsheadRead(r io.Reader) ([]byte, []byte, error) {
 	if berr != nil {
 		return nil, nil, ErrIO
 	}
+
+	f, _ := os.Create("cspub_response")
+	defer f.Close()
+	f.Write(head)
+	f.Write(body)
 
 	return head, body, nil
 }

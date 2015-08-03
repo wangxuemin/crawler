@@ -22,3 +22,22 @@ func TestChineseFilter(t *testing.T) {
 		}
 	}
 }
+
+func TestWordsum(t *testing.T) {
+	cases := []struct {
+		word  string
+		count int
+	}{
+		{"你好", 2},
+		{"你,好,", 2},
+		{"", 0},
+		{"，，你好啊", 3},
+	}
+
+	for _, c := range cases {
+		cnt := Chinese_wc(c.word)
+		if cnt != c.count {
+			t.Errorf("except wc %d, actual %d", c.count, cnt)
+		}
+	}
+}

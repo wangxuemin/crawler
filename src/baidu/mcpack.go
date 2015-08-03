@@ -25,7 +25,6 @@ package baidu
 import "C"
 
 import (
-	"fmt"
 	"reflect"
 	"unsafe"
 )
@@ -142,8 +141,13 @@ func unpack_kv(pack *C.struct___0, v reflect.Value) *McpackError {
 			if err := unpack_kv(subpack, vf); err != nil {
 				return err
 			}
+		case reflect.Interface:
+			subpack := C.mc_pack_get_object(pack, C.CString(realName))
+			evf := vf.Elem().Elem()
+			if err := unpack_kv(subpack, evf); err != nil {
+				return err
+			}
 		case reflect.String:
-			fmt.Println(realName)
 			value_c := C.mc_pack_get_str(pack, C.CString(realName))
 			vf.SetString(C.GoString(value_c))
 		case reflect.Int, reflect.Int32:

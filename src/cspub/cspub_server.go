@@ -3,31 +3,35 @@ package cspub
 import (
 	"C"
 	"baidu"
-	"log"
+	"env"
+	"fmt"
 	"net"
 )
 
 type CspubFetchResult struct {
-	Target_url string `mcpack:"target_url"`
-	Result     int32  `mcpack:"result"`
-	User       string `mcpack:"user"`
-	Status     string `mcpack:"status"`
-	Method     string `mcpack:"method"`
-	Cur_url    string `mcpack:"cur_url"`
-	Html_body  []byte `mcpack:"html_body"`
+	Target_url     string      `mcpack:"target_url"`
+	Result         int32       `mcpack:"result"`
+	User           string      `mcpack:"user"`
+	Status         string      `mcpack:"status"`
+	Method         string      `mcpack:"method"`
+	Cur_url        string      `mcpack:"cur_url"`
+	Html_body      []byte      `mcpack:"html_body"`
+	Trunc_overflow int         `mcpack:"trunc_overflow_page"`
+	User_data      interface{} `mcpack:"trespassing_field"`
 }
 
-type CspubResultReciver interface {
-	HandleCspubResult(result *CspubFetchResult) error
+type CspubResultReceiver interface {
+	GetContextInterface() interface{}
+	HandleCspubResult(result *CspubFetchResult)
 }
 
 type CspubResultServer struct {
-	listener net.Listener
-	recivers []CspubResultReciver
+	listener  net.Listener
+	receivers []CspubResultReceiver
 }
 
-func (server *CspubResultServer) Listen(addr string) error {
-	if listener, err := net.Listen("tcp", addr); err != nil {
+func (server *CspubResultServer) Listen(port int) error {
+	if listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port)); err != nil {
 		return err
 	} else {
 		server.listener = listener
@@ -36,28 +40,45 @@ func (server *CspubResultServer) Listen(addr string) error {
 	return nil
 }
 
-func (server *CspubResultServer) Work() {
+func (server *CspubResultServer) AddResultHandler(receiver CspubResultReceiver) {
+	server.receivers = append(server.receivers, receiver)
+}
+
+func (server *CspubResultServer) Work() error {
 	for {
 		conn, err := server.listener.Accept()
+		env.Log.Debug("new Connection Accept [%s]", conn.RemoteAddr().String())
 		if err != nil {
-			log.Fatal("listen error " + err.Error())
+			env.Log.Critical("listen error " + err.Error())
+			break
 		}
 		channel := make(chan string)
 		go server.request_handler(conn, channel)
 	}
+
+	env.Log.Info("Server Exit")
+	return nil
 }
 
 func (server *CspubResultServer) request_handler(conn net.Conn, out chan string) {
-	_, resp, err := baidu.NsheadRead(conn)
-	if err != nil {
-		log.Println("read error " + err.Error())
-		return
-	}
+	for {
+		_, resp, err := baidu.NsheadRead(conn)
+		if err != nil {
+			env.Log.Warn("read error " + err.Error())
+			break
+		}
 
-	fetchResult := &CspubFetchResult{}
-	baidu.Unmarshal(resp, fetchResult)
+		for _, receiver := range server.receivers {
+			context := receiver.GetContextInterface()
+			fetchResult := &CspubFetchResult{
+				User_data: context,
+			}
+			if err := baidu.Unmarshal(resp, fetchResult); err != nil {
+				env.Log.Warn("unmarshal resp %s error", string(resp))
+				break
+			}
 
-	for _, reciver := range server.recivers {
-		go reciver.HandleCspubResult(fetchResult)
+			go receiver.HandleCspubResult(fetchResult)
+		}
 	}
 }

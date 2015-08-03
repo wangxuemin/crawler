@@ -6,11 +6,16 @@ import (
 )
 
 func main() {
-	if err := env.Load("conf", "crawler.conf"); err != nil {
+	if err := env.Load("conf", "scheduler.conf"); err != nil {
 		panic(err.Error())
 	}
+	defer env.Close()
 
-	sch, _ := scheduler.NewScheduler()
+	sch, err := scheduler.NewScheduler()
+	if err != nil {
+		panic("init scheduler error: " + err.Error())
+	}
 
 	sch.Work()
+
 }

@@ -32,6 +32,17 @@ func ChineseU8_punctuation_filter(s string) string {
 	return Encoding_G2U8(Chinese_punctuation_filter(Encoding_U82G(s)))
 }
 
+func Encoding_U82U(src string) string {
+	cd, err := iconv.Open("UTF8", "UNICODE")
+	if err != nil {
+		fmt.Println("open iconv error")
+		return ""
+	}
+	defer cd.Close()
+
+	return cd.ConvString(src)
+}
+
 //compatiable to pirate novel
 //can accept only gbk encoding
 func Chinese_punctuation_filter(s string) string {
@@ -74,4 +85,22 @@ func Chinese_punctuation_filter(s string) string {
 	}
 
 	return strings.ToLower(string(output[:oidx]))
+}
+
+func Chinese_wc(s string) int {
+	cnt := 0
+	for _, c := range s {
+		fmt.Printf("%x\n", c)
+		if (c >= 0x4E00 && c <= 0xA000) ||
+			(c >= 0x3400 && c <= 0x4DC0) ||
+			(c >= 0x200000 && c <= 0x2A6E0) ||
+			(c >= 0x2A700 && c <= 0x2B740) ||
+			(c >= 0x2B740 && c <= 0x2B820) ||
+			(c >= 0xF900 && c <= 0xFB00) ||
+			(c >= 0x9FA6 && c <= 0x9FCC) ||
+			(c >= 0x2F800 && c <= 0x2FA20) {
+			cnt += 1
+		}
+	}
+	return cnt
 }

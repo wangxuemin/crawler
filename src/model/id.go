@@ -2,12 +2,13 @@
 package model
 
 import (
-	"hash/crc"
-	"strings"
+	"encoding/hex"
+	"fmt"
+	"hash/crc32"
 )
 
-func Sign(s string) int32 {
-	return crc.Checksum([]byte(string), nil)
+func Sign(s string) uint32 {
+	return crc32.ChecksumIEEE([]byte(s))
 }
 
 func GetBookid(short_id uint64) uint64 {
@@ -15,5 +16,9 @@ func GetBookid(short_id uint64) uint64 {
 }
 
 func GetGid(novel_name, author_name string) uint32 {
-	return Sign(Encoding_G2U8(novel_name) + "@" + Encoding_U82G(author_name))
+	novel_name_gbk := Encoding_U82G(novel_name)
+	author_name_gbk := Encoding_U82G(author_name)
+	return Sign(Chinese_punctuation_filter(novel_name_gbk) +
+		"@" +
+		Chinese_punctuation_filter(author_name_gbk))
 }
